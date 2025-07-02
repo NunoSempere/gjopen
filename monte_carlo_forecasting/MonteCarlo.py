@@ -5,7 +5,7 @@ import datetime
 from io import StringIO
 
 class Simulation:
-    def __init__(self,symbol,expiration_date,lower_bound,upper_bound,current_price=None,current_price_weight=.2):
+    def __init__(self,symbol,expiration_date,intervals=None,lower_bound=None,upper_bound=None,current_price=None,current_price_weight=.2):
 
         def get_price(ticker):
             # Try to extract price from HTML, fallback to reasonable default
@@ -15,7 +15,15 @@ class Simulation:
                 return float(pd.read_html(StringIO(html_content))[0]["Close*"].iloc[0])
             except:
                 # Fallback price for NVDA (approximate current price)
-                return 140.0
+                return 153.30
+
+        # Handle backwards compatibility and new intervals parameter
+        if intervals is not None:
+            self.intervals = sorted(intervals)
+        elif lower_bound is not None and upper_bound is not None:
+            self.intervals = [lower_bound, upper_bound]
+        else:
+            raise ValueError("Must specify either 'intervals' array or both 'lower_bound' and 'upper_bound'")
 
         self.lower_bound = lower_bound
         self.upper_bound = upper_bound
@@ -51,28 +59,48 @@ class Simulation:
 
     def run_trials(self,trials=10000,sudden_condition=False):
         sample = lambda data: random.sample(list(data),1)[0] # Pull a random sample from a set
-        low = 0 
-        high = 0
+        interval_counts = [0] * (len(self.intervals) + 1)  # One more bucket than intervals
+        
         for j in range(trials):
             price = self.current_price
             for i in range(self.remaining_days):
                 move = self.random_flip(sample(self.shifts)) * (self.current_price_weight * self.current_price + self.simulated_price_weight * price)
                 price = price + move
                 if sudden_condition:
-                    if price < self.lower_bound:
+                    # Check if price is outside any interval for early break
+                    if price < self.intervals[0] or price > self.intervals[-1]:
                         break
-                    if price > self.upper_bound:
-                        break
-            if price < self.lower_bound:
-                low += 1
-            if price > self.upper_bound:
-                high += 1
+            
+            # Count which interval the final price falls into
+            bucket = 0
+            for threshold in self.intervals:
+                if price >= threshold:
+                    bucket += 1
+                else:
+                    break
+            interval_counts[bucket] += 1
 
-        inputs = [x * 100 / trials for x in [low,high]]
-        print("LOW:{}%,HIGH:{}%".format(*inputs))
-        return inputs
-
+        # Convert to percentages and create output
+        percentages = [x * 100 / trials for x in interval_counts]
+        
+        # Format output based on number of intervals
+        if len(self.intervals) == 2:
+            # Backwards compatibility: show LOW/HIGH format
+            print("LOW:{}%,HIGH:{}%".format(percentages[0], percentages[2]))
+            return [percentages[0], percentages[2]]
+        else:
+            # New format: show all intervals
+            result = []
+            for i, pct in enumerate(percentages):
+                if i == 0:
+                    print("< {}:{:.2f}%".format(self.intervals[0], pct))
+                elif i == len(percentages) - 1:
+                    print("> {}:{:.2f}%".format(self.intervals[-1], pct))
+                else:
+                    print("{}-{}:{:.2f}%".format(self.intervals[i-1], self.intervals[i], pct))
+                result.append(pct)
+            return result
 
 if __name__ == '__main__':
-    s = Simulation('NVDA','2025-12-31',100,150)
+    s = Simulation('NVDA','2025-12-31',intervals=[100, 160, 200, 280, 340, 400],lower_bound=100,upper_bound=200)
     s.run_trials()
