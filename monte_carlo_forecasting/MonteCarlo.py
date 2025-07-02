@@ -2,6 +2,7 @@
 import pandas as pd
 import random
 import datetime
+from io import StringIO
 
 class Simulation:
     def __init__(self,symbol,expiration_date,lower_bound,upper_bound,current_price=None,current_price_weight=.2):
@@ -9,7 +10,9 @@ class Simulation:
         def get_price(ticker):
             # Try to extract price from HTML, fallback to reasonable default
             try:
-                return float(pd.read_html(ticker + '.html')[0]["Close*"].iloc[0])
+                with open(ticker + '.html', 'r') as f:
+                    html_content = f.read()
+                return float(pd.read_html(StringIO(html_content))[0]["Close*"].iloc[0])
             except:
                 # Fallback price for NVDA (approximate current price)
                 return 140.0
@@ -26,7 +29,15 @@ class Simulation:
         print("CURRENT PRICE:",self.current_price)
         self.current_price_weight = current_price_weight
         self.simulated_price_weight = 1 - current_price_weight
-        df = pd.read_csv(symbol + ".csv")
+        with open(symbol + "-yahoo-table.html", 'r') as f:
+            html_content = f.read()
+        df = pd.read_html(StringIO(html_content))[0]
+        # Use the correct column name and filter out dividend rows
+        close_col = 'Close  Close price adjusted for splits.'
+        # Filter out rows containing "Dividend" before converting to numeric
+        df = df[~df[close_col].astype(str).str.contains('Dividend', na=False)]
+        df = df[df[close_col].astype(str).str.contains(r'^\d', na=False)]
+        df['Close'] = pd.to_numeric(df[close_col], errors='coerce')
         df["Previous"] = df.Close.shift()
         df.dropna(inplace=True)
         self.shifts = set((df.Close/df.Previous).apply(lambda x: x - 1)) # Make a set of historical price shifts

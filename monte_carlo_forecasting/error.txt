@@ -1,0 +1,22 @@
+/home/nuno/Software/python/gjopen-jonathan/monte_carlo_forecasting/MonteCarlo.py:12: FutureWarning: Passing literal html to 'read_html' is deprecated and will be removed in a future version. To read from a literal string, wr
+ap it in a 'StringIO' object.
+  return float(pd.read_html(ticker + '.html')[0]["Close*"].iloc[0])
+/home/nuno/Software/python/gjopen-jonathan/monte_carlo_forecasting/.venv/lib/python3.12/site-packages/pandas/io/html.py:661: MarkupResemblesLocatorWarning: The input passed in on this line looks more like a filename than HTML or XML.
+
+If you meant to use Beautiful Soup to parse the contents of a file on disk, then something has gone wrong. You should open the file first, using code like this:
+
+    filehandle = open(your filename)
+
+You can then feed the open filehandle into Beautiful Soup instead of using the filename.
+
+However, if you want to parse some data that happens to look like a filename, then nothing has gone wrong: you are using Beautiful Soup correctly, and this warning is spurious and can be filtered. To make this warning go away, run this code before calling the BeautifulSoup constructor:
+
+    from bs4 import MarkupResemblesLocatorWarning
+    import warnings
+
+    warnings.filterwarnings("ignore", category=MarkupResemblesLocatorWarning)
+
+  soup = BeautifulSoup(udoc, features="html5lib", from_encoding=from_encoding)
+CURRENT PRICE: 140.0
+
+LOW:33.28%,HIGH:52.36%
