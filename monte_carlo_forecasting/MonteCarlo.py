@@ -57,7 +57,7 @@ class Simulation:
         return (1 / (1 + move) - 1)
 
 
-    def run_trials(self,trials=10000,sudden_condition=False):
+    def run_trials(self,trials=100000,sudden_condition=False):
         sample = lambda data: random.sample(list(data),1)[0] # Pull a random sample from a set
         interval_counts = [0] * (len(self.intervals) + 1)  # One more bucket than intervals
         
