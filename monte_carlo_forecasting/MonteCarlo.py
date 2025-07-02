@@ -57,5 +57,5 @@ class Simulation:
 
 
 if __name__ == '__main__':
-    s = Simulation('BTC-USD','2022-01-01',25000,100000)
+    s = Simulation('NVDA','2025-12-31',25000,100000)
     s.run_trials()
